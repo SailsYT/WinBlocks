@@ -1,0 +1,52 @@
+# WINBLOCKS - THE GIT IGNORE
+
+
+# Visual Studio temporary files
+.vs/
+*.user
+*.suo
+*.VC.db
+*.VC.opendb
+
+# Build output directories
+Debug/
+Release/
+x64/
+x86/
+bin/
+obj/
+build/
+
+# Compiled files
+*.exe
+*.dll
+*.obj
+*.pdb
+*.ilk
+*.idb
+*.pch
+*.ipch
+*.tlog
+*.lastbuildstate
+*.aps
+*.res
+
+# DO NOT EVER INCLUDE THESE CAUSE THE NINJAS WILL GET YOU
+*.gb
+*.gbc
+
+# External development SDKs
+discord_social_sdk/
+
+# Personal WinBlocks save data
+winblocks_scores.txt
+
+# Original disassembly reference material
+disasm/
+disasm.zip
+
+# Temporary files and backups
+*.tmp
+*.bak
+*.log
+*~
