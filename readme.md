@@ -2,6 +2,8 @@
 
 **WINBLOCKS!** is a WIP Windows recreation of **TETRIS** for the Nintendo GameBoy, built from scratch in **C++ with SDL2**!
 
+![WinBlocks Title Screen](screenshots/Title.png)
+
 My goal is to recreate the original feel, style, controls and sound of GameBoy **TETRIS** without the use of an emulator, **WINBLOCKS IS NOT A GAMEBOY EMULATOR**!
 
 # ROM REQUIRED!!
@@ -17,6 +19,8 @@ WinBlocks requires an **UNMODIFIED** version of **TETRIS** to read artwork, layo
 - Original ROM music options
 - Local High Score table (saved in "winblocks_scores.txt")
 - Discord Rich Presence
+
+![WinBlocks Title Screen](screenshots/Game.png)
 
 ## COMING SOON
 - B-TYPE mode!
