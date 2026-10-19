@@ -1,14 +1,30 @@
 # WinBlocks
 
-**WINBLOCKS!** is a WIP Windows recreation of **TETRIS** for the Nintendo GameBoy, built from scratch in **C++ with SDL2**!
+**WINBLOCKS!** is a Windows recreation of **TETRIS** for the Nintendo GameBoy, built from scratch in **C++ with SDL2**!
 
-![WinBlocks Title Screen](screenshots/Title.png)
+![WinBlocks](screenshots/Title.png)
 
 My goal is to recreate the original feel, style, controls and sound of GameBoy **TETRIS** without the use of an emulator, **WINBLOCKS IS NOT A GAMEBOY EMULATOR**!
 
 # ROM REQUIRED!!
 WinBlocks requires an **UNMODIFIED** version of **TETRIS** to read artwork, layouts, music and sound data from! 
 **NO ROM WILL EVER BE PROVIDED AND NO ORIGINAL GAME ASSETS ARE INCLUDED IN THIS REPOSITORY!**
+
+# VERSION 1.1 is **HERE** and INTRODUCING ALL NEW FEATURES!!
+
+![WinBlocks](screenshots/Extras1.png)
+
+- An **EXTRAS** Menu
+- Color Selection with 20 different palettes to choose from! **(you can find images of each one at the bottom of this readme)**
+- Quick Color Swapping via F3
+- An ingame **fullscreen** toggle
+- **Hard Drops, Ghost Piece** and **Piece Holding** via the Extras Menu
+- Audio Sliders for **music, sounds** and **Master Volume**
+- Persistent settings!
+- Updated the Score Board
+- Extra random additions and fixes
+
+![WinBlocks](screenshots/GameUpdate2.png)
 
 ## FEATURES
 - A 100% accurate and playable **SINGLE PLAYER A-TYPE** mode
@@ -19,37 +35,52 @@ WinBlocks requires an **UNMODIFIED** version of **TETRIS** to read artwork, layo
 - Original ROM music options
 - Local High Score table (saved in "winblocks_scores.txt")
 - Discord Rich Presence
+- Color Selector with Preference saving
+- Optional  QoL features
 
-![WinBlocks Title Screen](screenshots/Game.png)
+![WinBlocks](screenshots/Game.png)
 
 ## COMING SOON
 - B-TYPE mode!
-- Modern C-TYPE mode with Hard Drops and Ghost Pieces
-- Colour Selector with prefrence saving
-- Optional  QoL features
-- Setting Menu with volume sliders!
+- Modern C-TYPE mode
 
 ## CONTROLS (KEYBOARD)
-Movement - Arrow Keys
-Rotate Piece - Z/X/Space 
-Soft Drop - Down Arrow
-Start - Enter
-Pause - also the Enter key
-Scoreboard - X to confirm letter, Z to go back and UP/DOWN to swap letters
-Hide Next Piece - Backspace
-Disable Music In Game - F6
-Fullscreen - F11
+- Movement - Arrow Keys
+- Rotate Piece - Z/X/Space 
+- Soft Drop - Down
+- Hard Drop - Up
+- Hold Piece - C
+- Start - Enter
+- Pause - also the Enter key
+- Back - ESC
+- Scoreboard - X to confirm letter, Z to go back and UP/DOWN to swap letters
+- Hide Next Piece - Backspace
+- Disable Music In Game - F6
+- Fullscreen - F11
+- Settings Menu - F2
+- Instant Color Swapping - F3 (F3 + SHIFT to go back)
+- EXTRAS Page 1/2 swapping - TAB
+
+![WinBlocks](screenshots/Level.png)
 
 ## CONTROLS (CONTROLLER)
-Movement - Dpad
-Rotate Piece - A/B 
-Soft Drop - Dpad Down
-Start - Start Button
-Pause - also the Start Button
-Scoreboard - A to confirm letter, B to go back and Dpad UP/DOWN to swap letters
-Hide Next Piece - Currently Not Implimented
-Disable Music In Game - Currently Not Implimented
-Fullscreen - View Button (that small one on the left side of the XBOX controller)
+- Movement - Dpad
+- Rotate Piece - A/B 
+- Soft Drop - Down
+- Hard Drop - Up
+- Hold Piece - RB
+- Start - Start Button
+- Pause - also the Start Button
+- Back - B
+- Scoreboard - A to confirm letter, B to go back and Dpad UP/DOWN to swap letters
+- Hide Next Piece - Right Stick Press (R3)
+- Disable Music In Game - Left Stick Press (L3)
+- Fullscreen - View Button (that small one on the left side of the XBOX controller)
+- Settings Menu - Y 
+- Instant Color Swapping - LT/RT
+- EXTRAS Page 1/2 swapping - LB/RB
+
+![WinBlocks](screenshots/TypeUpdate.png)
 
 ## Build Requirements
 - Windows and Visual Studio with the MSVC C++ toolchain (C++20 for the Discord Social SDK integration)
@@ -74,3 +105,48 @@ WinBlocks is an unofficial fan-made recreation and is not affiliated with or end
 
 ## Disclaimer Part Two
 Some AI assistance was used in this project for general assistance and to help me understand parts of code.
+
+## COLOR PALETTES (in order)
+
+![WinBlocks](screenshots/01.png)
+
+![WinBlocks](screenshots/02.png)
+
+![WinBlocks](screenshots/03.png)
+
+![WinBlocks](screenshots/04.png)
+
+![WinBlocks](screenshots/05.png)
+
+![WinBlocks](screenshots/06.png)
+
+![WinBlocks](screenshots/07.png)
+
+![WinBlocks](screenshots/08.png)
+
+![WinBlocks](screenshots/09.png)
+
+![WinBlocks](screenshots/10.png)
+
+![WinBlocks](screenshots/11.png)
+
+![WinBlocks](screenshots/12.png)
+
+![WinBlocks](screenshots/13.png)
+
+![WinBlocks](screenshots/14.png)
+
+![WinBlocks](screenshots/15.png)
+
+![WinBlocks](screenshots/16.png)
+
+![WinBlocks](screenshots/17.png)
+
+![WinBlocks](screenshots/18.png)
+
+![WinBlocks](screenshots/19.png)
+
+![WinBlocks](screenshots/20RB.png)
+**RAINBOW**
+
+- In future any new color palettes will be added down here :D

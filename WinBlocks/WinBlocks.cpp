@@ -9,6 +9,8 @@
 #include <iterator>
 #include <cstring>
 #include <string>
+#include <sstream>
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <ctime>
@@ -20,6 +22,8 @@
 // Screen states, score entries, piece data, palette and cartridge constants.
 // ============================================================================
 
+// i wonder what would happen if you used any other rom with this?
+// probs wont load but it would be intresting to see
 const size_t ROM_SIZE = 32768;
 
 enum class Screen
@@ -27,6 +31,7 @@ enum class Screen
     COPYRIGHT,
     TITLE,
     GAME_MUSIC,
+    SETTINGS,
     A_LEVEL,
     B_LEVEL,
     B_HIGH,
@@ -47,12 +52,213 @@ struct Piece
     int x, y;
 };
 
-const SDL_Color PALETTE[4] = {
+SDL_Color PALETTE[4] = {
     {155, 188,  15, 255},
     {139, 172,  15, 255},
     { 48,  98,  48, 255},
     { 15,  56,  15, 255},
 };
+
+// FOR THE NEW COLOR PALETTES, as if that wasnt already obvious 
+const SDL_Color PALETTE_PRESETS[20][4] =
+{
+    // DMG Green
+    {
+        {155,188,15,255}, {139,172,15,255},
+        {48,98,48,255}, {15,56,15,255}
+    },
+
+    // DMG Gray
+    {
+        {224,224,224,255}, {162,162,162,255},
+        {86,86,86,255}, {24,24,24,255}
+    },
+
+    // Miku Blue
+    {
+        {221,247,255,255}, {143,207,229,255},
+        {58,119,167,255}, {17,44,82,255}
+    },
+
+    // Teto Red
+    {
+        { 255, 232, 210, 255 }, { 255, 140, 90, 255 },
+        { 210, 45, 35, 255 }, { 90, 10, 10, 255 }     
+    },
+
+    // Coffee 
+    {
+        {255,230,176,255}, {218,173,106,255},
+        {135,79,43,255}, {63,30,22,255}
+    },
+
+    // Lavender
+    {
+        {241,226,255,255}, {184,153,214,255},
+        {104,73,147,255}, {40,27,69,255}
+    },
+
+    // FOREST
+   {
+       {225,239,199,255}, {150,192,114,255},
+       {65,116,59,255},   {17,59,31,255}
+   },
+
+    // SUNSET
+    {
+        {255,222,186,255}, {253,144,117,255},
+        {160,76,139,255},  {50,31,91,255}
+    },
+
+
+    // OCEAN 
+    {
+        {175,224,207,255}, {43,151,163,255},
+        {9,75,108,255},    {2,22,49,255}
+    },
+
+    //  SAKURA
+    {
+        {255,242,246,255}, {245,182,206,255},
+        {192,91,149,255},  {92,35,87,255}
+    },
+
+    // 11 - AMBER
+    {
+        {255,244,190,255}, {251,194,73,255},
+        {176,106,22,255},  {73,45,16,255}
+    },
+
+    // 12 - MINT
+    {
+        {228,255,247,255}, {140,231,203,255},
+        {44,153,146,255},  {12,58,78,255}
+    },
+
+    // 13 - MIDNIGHT
+    {
+        {201,210,249,255}, {113,126,209,255},
+        {49,59,129,255},   {15,20,54,255}
+    },
+
+    // LIME
+    {
+        {247,255,190,255}, {195,230,75,255},
+        {96,151,32,255},   {32,64,25,255}
+    },
+
+    // LIGHT PURPLE
+    {
+        {253,218,250,255}, {243,119,215,255},
+        {114,81,198,255},  {41,31,98,255}
+    },
+
+    // PURPLE
+    {
+        {241,223,255,255}, {177,125,221,255},
+        {95,52,152,255},   {36,17,77,255}
+    },
+
+    // PEACH
+    {
+        {255,244,224,255}, {250,191,154,255},
+        {220,115,105,255}, {105,57,70,255}
+    },
+
+    // AUTUMN
+    {
+        {253,238,203,255}, {220,151,79,255},
+        {138,78,43,255},   {60,42,36,255}
+    },
+
+    // CYAN
+    {
+        {223,255,245,255}, {99,234,186,255},
+        {72,100,185,255},  {22,18,57,255}
+    },
+
+    // RAINBOW (the starting colours get updated during gameplay
+    {
+        {255,191,191,255}, {199,100,100,255},
+        {117,23,23,255},   {48,4,4,255}
+    }
+};
+
+const char* const PALETTE_NAMES[20] =
+{
+    "DMG GREEN",
+    "DMG GRAY",
+    "MIKU BLUE",
+    "TETO RED",
+    "COFFEE",
+    "LAVENDER",
+    "FOREST",
+    "SUNSET",
+    "OCEAN",
+    "SAKURA",
+    "AMBER",
+    "MINT",
+    "MIDNIGHT",
+    "LIME",
+    "LIGHT PURPLE",
+    "PURPLE",
+    "PEACH",
+    "AUTUMN",
+    "CYAN",
+    "RAINBOW"
+};
+
+constexpr int PALETTE_COUNT = static_cast<int>(sizeof(PALETTE_PRESETS) / sizeof(PALETTE_PRESETS[0]));
+
+// RAINBOW PALETTE - convert a rainbow hue into an SDL colour
+SDL_Color hueToColor(float hue, float saturation, float brightness)
+{
+    float chroma = brightness * saturation;
+
+    float middle = chroma * (1.0f - std::fabs(std::fmod(hue / 60.0f, 2.0f) - 1.0f));
+
+    float offset = brightness - chroma;
+
+    float red = 0.0f;
+    float green = 0.0f;
+    float blue = 0.0f;
+
+    if (hue < 60.0f)
+    {
+        red = chroma;
+        green = middle;
+    }
+    else if (hue < 120.0f)
+    {
+        red = middle;
+        green = chroma;
+    }
+    else if (hue < 180.0f)
+    {
+        green = chroma;
+        blue = middle;
+    }
+    else if (hue < 240.0f)
+    {
+        green = middle;
+        blue = chroma;
+    }
+    else if (hue < 300.0f)
+    {
+        red = middle;
+        blue = chroma;
+    }
+    else
+    {
+        red = chroma;
+        blue = middle;
+    }
+
+    return {
+        static_cast<Uint8>(std::round((red + offset) * 255.0f)),
+        static_cast<Uint8>(std::round((green + offset) * 255.0f)),
+        static_cast<Uint8>(std::round((blue + offset) * 255.0f)), 255};
+}
 
 const size_t ASCII_OFFSET = 0x415F;
 
@@ -233,6 +439,7 @@ std::vector<uint8_t> buildTiles(const std::vector<uint8_t>& rom)
 // Save and load the existing per-level three-place high-score tables.
 // ============================================================================
 
+constexpr int HIGH_SCORE_NAME_LENGTH = 6;
 void saveHighScores(const HighScore scores[10][3])
 {
     std::ofstream file("winblocks_scores.txt");
@@ -246,7 +453,8 @@ void saveHighScores(const HighScore scores[10][3])
         {
             const HighScore& entry = scores[level][rank];
 
-            file << entry.score << " " << (entry.name.empty() ? "------" : entry.name) << "\n";
+            file << entry.score << " " << (entry.name.empty()
+                ? std::string(HIGH_SCORE_NAME_LENGTH, '-') : entry.name) << "\n";
         }
     }
 }
@@ -268,10 +476,10 @@ void loadHighScores(HighScore scores[10][3])
             if (!(file >> value >> name))
                 return;
 
-            if (value < 0 || value > 999999 || name.size() > 6)
+            if (value < 0 || value > 999999)
                 return;
 
-            if (name == "------") name = "";
+            if (name.size() > HIGH_SCORE_NAME_LENGTH) name.resize(HIGH_SCORE_NAME_LENGTH);
 
             scores[level][rank] = { name, value };
         }
@@ -597,6 +805,302 @@ void drawGBText(SDL_Renderer* renderer, const std::vector<uint8_t>& tiles, const
         drawTile(renderer, tiles.data() + tile * 16, (col + i) * 8, row * 8);
     }
 }
+
+void drawScoreName(SDL_Renderer* renderer, const std::vector<uint8_t>& tiles, const std::string& name, int col, int row)
+{
+    static const char* const DASH[7] =
+    {
+        ".....", ".....", ".....", ".###.",
+        ".....", ".....", "....."
+    };
+
+    static const char* const EXCLAMATION[7] =
+    {
+        "..#..", "..#..", "..#..", "..#..",
+        ".....", "..#..", "....."
+    };
+
+    static const char* const QUESTION[7] =
+    {
+        ".###.", "#...#", "....#", "...#.",
+        "..#..", ".....", "..#.."
+    };
+
+    const int originX = col * 8;
+    const int originY = row * 8;
+
+    for (int i = 0; i < HIGH_SCORE_NAME_LENGTH; ++i)
+    {
+        char ch = (i < static_cast<int>(name.size())) ? name[i] : '-';
+
+        int x = originX + i * 8;
+
+        if (ch == '-' || ch == '!' || ch == '?')
+        {
+            const char* const* glyph = (ch == '-') ? DASH : ((ch == '!') ? EXCLAMATION : QUESTION);
+
+            SDL_SetRenderDrawColor(renderer, PALETTE[0].r, PALETTE[0].g, PALETTE[0].b, 255);
+
+            SDL_Rect background = { x, originY, 8, 8 };
+            SDL_RenderFillRect(renderer, &background);
+
+            SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+            for (int py = 0; py < 7; ++py)
+            {
+                for (int px = 0; px < 5; ++px)
+                {
+                    if (glyph[py][px] == '#')
+                    {
+                        SDL_RenderDrawPoint(renderer, x + 1 + px, originY + py);
+                    }
+                }
+            }
+            continue;
+        }
+
+        // Reuse the OG Rom characters
+        int tileIndex = 0x2F;
+
+        if (ch >= 'A' && ch <= 'Z')
+            tileIndex = 0x0A + (ch - 'A');
+        else if (ch >= '0' && ch <= '9')
+            tileIndex = ch - '0';
+        else if (ch == '.')
+            tileIndex = 0x29;
+
+        if ((tileIndex + 1) * 16 > static_cast<int>(tiles.size()))
+        {
+            continue;
+        }
+
+        const uint8_t* tile = tiles.data() + tileIndex * 16;
+
+        for (int py = 0; py < 8; ++py)
+        {
+            uint8_t lo = tile[py * 2];
+            uint8_t hi = tile[py * 2 + 1];
+
+            for (int px = 0; px < 8; ++px)
+            {
+                int bit = 7 - px;
+                int shade = (((hi >> bit) & 1) << 1) | ((lo >> bit) & 1);
+                SDL_SetRenderDrawColor(renderer, PALETTE[shade].r, PALETTE[shade].g, PALETTE[shade].b, 255);
+
+                SDL_RenderDrawPoint(renderer, x + px, originY + py
+                );
+            }
+        }
+    }
+}
+
+void drawGhostPiece(SDL_Renderer* renderer, const Piece& ghost)
+{
+    const char* shape = SHAPES[ghost.type][ghost.rot];
+
+    SDL_SetRenderDrawColor(renderer, PALETTE[2].r, PALETTE[2].g, PALETTE[2].b, 255);
+
+    for (int row = 0; row < 4; ++row)
+    {
+        for (int col = 0; col < 4; ++col)
+        {
+            if (shape[row * 4 + col] != '#')
+                continue;
+
+            int boardY = ghost.y + row;
+
+            if (boardY < 0 || boardY >= FIELD_H)
+                continue;
+
+            SDL_Rect outline =
+            {
+                FIELD_X + (ghost.x + col) * 8 + 1,
+                FIELD_Y + boardY * 8 + 1,
+                6,
+                6
+            };
+
+            SDL_RenderDrawRect(renderer, &outline);
+        }
+    }
+}
+
+void drawPreviewLabel(SDL_Renderer* renderer, const std::vector<uint8_t>& tiles, const char* label, int x, int y)
+{
+    // draw four letters using le OG ROM tiles
+    for (int i = 0; i < 4; ++i)
+    {
+        int tileIndex = 0x0A + (label[i] - 'A');
+
+        drawTile(renderer, tiles.data() + tileIndex * 16, x + i * 8, y);
+    }
+}
+
+void drawHeldPreview(SDL_Renderer* renderer, const std::vector<uint8_t>& tiles, const std::vector<uint8_t>& layout, int heldType, bool showLabel)
+{
+    if (layout.size() < 20 * 18 ||
+        tiles.size() < 256 * 16)
+    {
+        return;
+    }
+
+    // copy the next piece preview box
+    for (int row = 12; row < 18; ++row)
+    {
+        for (int col = 14; col < 20; ++col)
+        {
+            int tileIndex = layout[row * 20 + col];
+
+            drawTile(renderer, tiles.data() + tileIndex * 16, (col - 13) * 8, (row - 12) * 8);
+        }
+    }
+
+    // Display held during gameplay, hide it during game over 
+    if (showLabel)
+    {
+        drawPreviewLabel(renderer, tiles, "HELD", 16, 8);
+    }
+
+    // if no piece is held, leave the box empty
+    if (heldType < 0 || heldType >= 7)
+        return;
+
+    // draw the stored tetromino
+    const char* shape = SHAPES[heldType][0];
+    int blockNumber = 0;
+
+    for (int row = 0; row < 4; ++row)
+    {
+        for (int col = 0; col < 4; ++col)
+        {
+            if (shape[row * 4 + col] != '#')
+                continue;
+
+            int tileIndex = pieceTile(heldType, 0, blockNumber++);
+
+            int x = FIELD_X + col * 8;
+            int y = 8 + row * 8;
+
+            drawTile(renderer, tiles.data() + tileIndex * 16, x, y);
+        }
+    }
+}
+
+void drawMirroredRomTile(
+    SDL_Renderer* renderer,
+    const uint8_t* tile,
+    int x,
+    int y)
+{
+    for (int row = 0; row < 8; ++row)
+    {
+        uint8_t lo = tile[row * 2];
+        uint8_t hi = tile[row * 2 + 1];
+
+        for (int col = 0; col < 8; ++col)
+        {
+            int bit = col;
+
+            int color =
+                (((hi >> bit) & 1) << 1) |
+                ((lo >> bit) & 1);
+
+            SDL_SetRenderDrawColor(
+                renderer,
+                PALETTE[color].r,
+                PALETTE[color].g,
+                PALETTE[color].b,
+                255
+            );
+
+            SDL_RenderDrawPoint(
+                renderer,
+                x + col,
+                y + row
+            );
+        }
+    }
+}
+
+void drawGameTimer(SDL_Renderer* renderer, const std::vector<uint8_t>& tiles, 
+    const std::vector<uint8_t>& layout, uint64_t elapsedMs)
+{
+    if (layout.size() < 20 * 18 || tiles.size() < 256 * 16)
+        return;
+
+    SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+    SDL_RenderClear(renderer);
+
+
+    // copy the OG level box from the rom
+    for (int row = 5; row <= 8; ++row)
+    {
+        int rightBorderTile = layout[row * 20 + 19];
+
+        drawMirroredRomTile(renderer, tiles.data() + rightBorderTile * 16, 0, (row - 5) * 8);
+
+        for (int col = 14; col <= 19; ++col)
+        {
+            int tileIndex = layout[row * 20 + col];
+
+            if (row == 6 && col >= 14 && col <= 18)
+            {
+                tileIndex = 0x2F;
+            }
+
+            drawTile(renderer, tiles.data() + tileIndex * 16, (col - 13) * 8, (row - 5) * 8);
+        }
+    }
+
+    uint64_t totalSeconds = elapsedMs / 1000;
+
+    // after the player passes 59:59, display hours and minutes
+    bool showHours = totalSeconds >= 3599;
+
+    // draw the tile using the OG font
+    drawPreviewLabel(renderer, tiles, showHours ? "HOUR" : "TIME", 12, 8);
+
+    int firstNumber;
+    int secondNumber;
+
+    if (showHours)
+    {
+        // hours and minutes 
+        firstNumber = static_cast<int>(std::min<uint64_t>(totalSeconds / 3600, 99));
+
+        secondNumber = static_cast<int>((totalSeconds / 60) % 60);
+    }
+    else
+    {
+        // minutes and seconds
+        firstNumber = static_cast<int>(totalSeconds / 60);
+        secondNumber = static_cast<int>(totalSeconds % 60);
+    }
+
+    const int digits[4] =
+    {
+        firstNumber / 10,
+        firstNumber % 10,
+        secondNumber / 10,
+        secondNumber % 10
+    };
+
+    const int digitX[4] = { 8, 16, 32, 40 };
+
+    // draw the four digits with OG rom tiles
+    for (int i = 0; i < 4; ++i)
+    {
+        drawTile(renderer, tiles.data() + digits[i] * 16, digitX[i], 16);
+    }
+
+    // draw the : between minutes and seconds
+    SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+    SDL_RenderDrawPoint(renderer, 27, 18);
+    SDL_RenderDrawPoint(renderer, 27, 22);
+}
+
 
 // ============================================================================
 // WINDOW SCALING
@@ -1127,6 +1631,22 @@ int main()
         return 1;
     }
 
+    // create a second render target for the held piece box 
+    SDL_Texture* heldFrame = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 56, 48);
+
+    if (!heldFrame)
+    {
+        SDL_Log("Could not create Hold preview texture: %s", SDL_GetError());
+    }
+
+    SDL_Texture* gameTimerFrame = SDL_CreateTexture(
+        renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 56, 28);
+
+    if (!gameTimerFrame)
+    {
+        SDL_Log("Could not create gameplay timer texture: %s", SDL_GetError());
+    }
+
     // ============================================================================
     // AUDIO DEVICE
     // Open the queued 48 kHz, mono, floating-point audio output.
@@ -1292,6 +1812,11 @@ int main()
     SDL_GameController* controller = nullptr;
     SDL_JoystickID controllerId = -1;
 
+
+    // Track Trigger Clicks
+    bool leftTriggerHeld = false;
+    bool rightTriggerHeld = false;
+
     for (int i = 0; i < SDL_NumJoysticks(); i++)
     {
         if (SDL_IsGameController(i))
@@ -1328,6 +1853,9 @@ int main()
     std::vector<uint8_t> copyrightLayout;
     std::vector<uint8_t> titleLayout;
     std::vector<uint8_t> gameMusicLayout;
+    std::vector<uint8_t> expandedGameMusicLayout;
+    std::vector<uint8_t> extrasLayout;
+    std::vector<uint8_t> extrasAudioLayout;
     std::vector<uint8_t> aSelectLayout;
     std::vector<uint8_t> bSelectLayout;
     std::vector<uint8_t> pauseText, gameOverText, tryAgainText;
@@ -1336,6 +1864,189 @@ int main()
 
     Screen screen = Screen::COPYRIGHT;
     Uint32 screenStart = SDL_GetTicks();
+
+    Screen settingsReturnScreen = Screen::TITLE;
+    int settingsSelection = 0;
+
+    // 0 = Page one, 1 = Page two
+    int settingsPage = 0;
+
+    // =====================================================
+    // WINBLOCKS EXTRAS - LOAD AND SAVE
+    // =====================================================
+
+    std::string settingsPath;
+
+    // Find the Windows application preferences folder
+    if (char* directory = SDL_GetPrefPath("SailsYT", "WinBlocks"))
+    {
+        settingsPath = std::string(directory) + "winblocks_settings.ini";
+
+        SDL_free(directory);
+    }
+    else
+    {
+        SDL_Log("Settings folder error: %s", SDL_GetError());
+    }
+
+    int paletteIndex = 0;
+    bool startFullscreen = false;
+    bool ghostEnabled = false;
+    bool hardDropEnabled = false;
+    bool holdEnabled = false;
+
+    // for the playtime tracking, idk why im adding this, but i am :)
+    uint64_t savedPlaySeconds = 0;
+    uint64_t sessionPlayMs = 0;
+    uint64_t gamePlayMs = 0;
+
+    // for the volume selcection
+    int masterVolume = 100;
+    int musicVolume = 100;
+    int sfxVolume = 100;
+
+    // Load existing preferences if available
+    if (!settingsPath.empty())
+    {
+        std::ifstream file(settingsPath);
+        std::string line;
+
+        while (std::getline(file, line))
+        {
+            size_t equals = line.find('=');
+
+            if (equals == std::string::npos)
+                continue;
+
+            std::string key = line.substr(0, equals);
+
+            std::istringstream valueText(line.substr(equals + 1));
+
+            // read the playtime (as 64 bit)
+            if (key == "TotalPlaySeconds")
+            {
+                uint64_t seconds = 0;
+
+                if (valueText >> seconds)
+                    savedPlaySeconds = seconds;
+
+                continue;
+            }
+
+            // existing settings use the normal integers 
+            int value = 0;
+
+            if (!(valueText >> value))
+                continue;
+
+
+            if (key == "Palette" && value >= 0 && value < PALETTE_COUNT)
+            {
+                paletteIndex = value;
+            }
+            else if (key == "Fullscreen" && (value == 0 || value == 1))
+            {
+                startFullscreen = (value == 1);
+            }
+
+            else if (key == "GhostPiece" && (value == 0 || value == 1))
+            {
+                ghostEnabled = (value == 1);
+            }
+            else if (key == "HardDrop" && (value == 0 || value == 1))
+            {
+                hardDropEnabled = (value == 1);
+            }
+            else if (key == "HoldPiece" && (value == 0 || value == 1))
+            {
+                holdEnabled = (value == 1);
+            }
+            else if (key == "MasterVolume" && value >= 0 && value <= 100)
+            {
+                masterVolume = value;
+            }
+            else if (key == "MusicVolume" && value >= 0 && value <= 100)
+            {
+                musicVolume = value;
+            }
+            else if (key == "SfxVolume" && value >= 0 && value <= 100)
+            {
+                sfxVolume = value;
+            }
+        }
+    }
+
+    // Apply the saved palette instantly
+    for (int i = 0; i < 4; ++i)
+    {
+        PALETTE[i] = PALETTE_PRESETS[paletteIndex][i];
+    }
+
+    // Restore fullscreen if previously enabled
+    if (startFullscreen)
+    {
+        if (SDL_SetWindowFullscreen(
+            window,
+            SDL_WINDOW_FULLSCREEN_DESKTOP) != 0)
+        {
+            SDL_Log("Fullscreen restore error: %s", SDL_GetError());
+        }
+    }
+
+    // Save the current display settings
+    auto savePreferences = [&](){
+            if (settingsPath.empty())
+                return;
+
+            std::ofstream file(settingsPath);
+
+            if (!file)
+            {
+                SDL_Log("Could not save WinBlocks settings.");
+                return;
+            }
+
+            bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+            file << "[Display]\n";
+            file << "Palette=" << paletteIndex << '\n';
+            file << "Fullscreen=" << (fullscreen ? 1 : 0) << '\n';
+            file << "[Gameplay]\n";
+            file << "GhostPiece=" << (ghostEnabled ? 1 : 0) << '\n';
+            file << "HardDrop=" << (hardDropEnabled ? 1 : 0) << '\n';
+            file << "HoldPiece=" << (holdEnabled ? 1 : 0) << '\n';
+
+            file << "[Audio]\n";
+            file << "MasterVolume=" << masterVolume << '\n';
+            file << "MusicVolume=" << musicVolume << '\n';
+            file << "SfxVolume=" << sfxVolume << '\n';
+
+            file << "[Statistics]\n";
+            file << "TotalPlaySeconds=" << (savedPlaySeconds + sessionPlayMs / 1000) << '\n';
+        };
+
+    // All palette shortcuts now save automatically
+    auto cyclePalette = [&](int direction)
+        {
+            paletteIndex = (paletteIndex + direction + PALETTE_COUNT) % PALETTE_COUNT;
+
+            for (int i = 0; i < 4; ++i)
+            {
+                PALETTE[i] = PALETTE_PRESETS[paletteIndex][i];
+            }
+            savePreferences();
+        };
+
+    // Shared fullscreen handler for F11 and EXTRAS
+    auto toggleFullscreen = [&](){
+            bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+
+            if (SDL_SetWindowFullscreen(window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP) != 0)
+            {
+                SDL_Log("Fullscreen error: %s", SDL_GetError());
+                return;
+            }
+            savePreferences();
+        };
 
     int numPlayers = 0;
     int aLevel = 0;
@@ -1479,6 +2190,146 @@ int main()
         copyrightLayout = extractLayoutAt(rom, LAYOUT_COPYRIGHT_OFFSET);
         titleLayout = extractLayoutAt(rom, LAYOUT_TITLE_OFFSET);
         gameMusicLayout = extractLayoutAt(rom, LAYOUT_GAME_MUSIC_OFFSET);
+
+        // gonna expand the Gane Type menu using the ROM tiles
+        expandedGameMusicLayout = gameMusicLayout;
+
+        // Music selection gets moved down by one tile row
+        for (int row = 9; row <= 15; ++row)
+        {
+            for (int col = 1; col <= 18; ++col)
+            {
+                expandedGameMusicLayout[(row + 1) * 20 + col] = gameMusicLayout[row * 20 + col];
+            }
+        }
+
+        // This will build a second Game Type Row
+        // I'm Adding a divider that comes from the Music Type Panel 
+        for (int col = 2; col <= 17; ++col)
+        {
+            expandedGameMusicLayout[6 * 20 + col] = gameMusicLayout[13 * 20 + col];
+            expandedGameMusicLayout[7 * 20 + col] = gameMusicLayout[5 * 20 + col];
+            expandedGameMusicLayout[8 * 20 + col] = gameMusicLayout[6 * 20 + col];
+        }
+
+        // Create a gap B4 the Music Type header
+        for (int col = 1; col <= 18; ++col)
+        {
+            expandedGameMusicLayout[9 * 20 + col] = gameMusicLayout[7 * 20 + col];
+        }
+
+        // Replace the copied A with th3 C character
+        expandedGameMusicLayout[7 * 20 + 3] = gameMusicLayout[14 * 20 + 3];
+
+        // Clear the copied B-TYPE text for the EXTRAS text
+        for (int col = 11; col <= 16; ++col)
+        {
+            expandedGameMusicLayout[7 * 20 + col] = gameMusicLayout[5 * 20 + 9];
+        }
+
+        // Reuse the OG ROM outer frame and background
+        extrasLayout = gameMusicLayout;
+
+        const uint8_t dots = gameMusicLayout[1 * 20 + 1];
+        const uint8_t blank = gameMusicLayout[3 * 20 + 9];
+
+        // Remove the OG menu labels and boxes
+        for (int row = 1; row <= 16; ++row)
+        {
+            for (int col = 1; col <= 18; ++col)
+            {
+                extrasLayout[row * 20 + col] = dots;
+            }
+        }
+
+        // OG border tiles
+        const uint8_t topLeft = gameMusicLayout[4 * 20 + 2];
+        const uint8_t topMiddle = gameMusicLayout[4 * 20 + 3];
+        const uint8_t topRight = gameMusicLayout[4 * 20 + 17];
+
+        const uint8_t sideLeft = gameMusicLayout[5 * 20 + 2];
+        const uint8_t sideRight = gameMusicLayout[5 * 20 + 17];
+        
+        const uint8_t bottomLeft = gameMusicLayout[6 * 20 + 2];
+        const uint8_t bottomMiddle = gameMusicLayout[6 * 20 + 3];
+        const uint8_t bottomRight = gameMusicLayout[6 * 20 + 17];
+
+        // Construct decorative panels from those ROM tiles
+        auto addExtrasPanel = [&](int left, int top,
+            int right, int bottom)
+            {
+                for (int col = left; col <= right; ++col)
+                {
+                    extrasLayout[top * 20 + col] =
+                        (col == left) ? topLeft :
+                        (col == right) ? topRight : topMiddle;
+
+                    extrasLayout[bottom * 20 + col] =
+                        (col == left) ? bottomLeft :
+                        (col == right) ? bottomRight : bottomMiddle;
+                }
+
+                for (int row = top + 1; row < bottom; ++row)
+                {
+                    for (int col = left; col <= right; ++col)
+                    {
+                        extrasLayout[row * 20 + col] =
+                            (col == left) ? sideLeft :
+                            (col == right) ? sideRight : blank;
+                    }
+                }
+            };
+
+        addExtrasPanel(5, 1, 14, 3);    // Title
+        addExtrasPanel(1, 4, 18, 8);    // Palette
+        addExtrasPanel(1, 9, 18, 11);   // Fullscreen
+        addExtrasPanel(1, 12, 18, 16);  // Gameplay options
+
+        // EXTRAS PAGE 2
+
+        // copy Page one
+        extrasAudioLayout = extrasLayout;
+
+        // clear the copied Page one
+        for (int row = 4; row <= 16; ++row)
+        {
+            for (int col = 1; col <= 18; ++col)
+            {
+                extrasAudioLayout[row * 20 + col] = dots;
+            }
+        }
+
+        // create new boxes using the same tiles from Page one
+        auto addAudioPanel = [&](int left, int top,
+            int right, int bottom)
+            {
+                for (int col = left; col <= right; ++col)
+                {
+                    extrasAudioLayout[top * 20 + col] =
+                        (col == left) ? topLeft :
+                        (col == right) ? topRight : topMiddle;
+
+                    extrasAudioLayout[bottom * 20 + col] =
+                        (col == left) ? bottomLeft :
+                        (col == right) ? bottomRight : bottomMiddle;
+                }
+
+                for (int row = top + 1; row < bottom; ++row)
+                {
+                    for (int col = left; col <= right; ++col)
+                    {
+                        extrasAudioLayout[row * 20 + col] =
+                            (col == left) ? sideLeft :
+                            (col == right) ? sideRight : blank;
+                    }
+                }
+            };
+
+        // audio panels :)
+        addAudioPanel(1, 4, 18, 7);   // Master Volume
+        addAudioPanel(1, 8, 18, 11);  // Music Volume
+        addAudioPanel(1, 12, 18, 15); // SFX Volume
+
         aSelectLayout = extractLayoutAt(rom, LAYOUT_A_SELECT_OFFSET);
         bSelectLayout = extractLayoutAt(rom, LAYOUT_B_SELECT_OFFSET);
         titleTiles = BuildtitleTiles(rom);
@@ -1549,6 +2400,12 @@ int main()
     uint8_t gameOverWavePitch = 0xD0;
 
     bool nextHidden = false;
+    bool musicMuted = false;
+    
+    // for the hold system
+    int heldPieceType = -1;
+    bool holdUsedThisPiece = false;
+
     int entryPhase = 0;
     int stuckAtSpawnCount = 0;
 
@@ -1583,6 +2440,8 @@ int main()
 
     hiddenType = 0;
     int nextType = 0;
+    heldPieceType = -1;
+    holdUsedThisPiece = false;
 
     // ============================================================================
     // GAME STATE TRANSITIONS
@@ -1628,6 +2487,7 @@ int main()
     };
 
     auto restartGame = [&]() {
+        musicMuted = false;
         for (int r = 0; r < FIELD_H; r++)
             for (int c = 0; c < FIELD_W; c++)
                 field[r][c] = -1;
@@ -1648,8 +2508,12 @@ int main()
 
         mode = MODE_PLAYING;
 
+        gamePlayMs = 0;
         hiddenType = 0;
         nextType = 0;
+
+        heldPieceType = -1;
+        holdUsedThisPiece = false;
 
         spawn(); spawn(); spawn();
     };
@@ -1675,20 +2539,20 @@ int main()
                 highScores[playedLevel][i] = highScores[playedLevel][i - 1];
             }
 
-            highScores[playedLevel][pendingRank] = { "AAAAAA", score };
+            highScores[playedLevel][pendingRank] = { "------", score };
 
             namePosition = 0;
         }
-
         if (pendingRank >= 0)
         {
             startRomSong(1);
+            screen = Screen::SCOREBOARD;
         }
         else
         {
             resumeChosenMusic();
+            screen = Screen::A_LEVEL;
         }
-        screen = Screen::SCOREBOARD;
     };
 
     auto landIfResting = [&]() {
@@ -1802,6 +2666,9 @@ int main()
     // Process events, advance state, synthesize sound and render each frame.
     // ============================================================================
 
+    Uint32 previousFrameTick = SDL_GetTicks();
+    Uint32 lastStatisticSave = previousFrameTick;
+
     while (running)
     {
 
@@ -1840,14 +2707,56 @@ int main()
 
                     controller = nullptr;
                     controllerId = -1;
+                    leftTriggerHeld = false;
+                    rightTriggerHeld = false;
 
-                    SDL_Log("Controller disconnected");
+                    SDL_Log("Controller Die Bro?");
                 }
             }
             else if (event.type == SDL_DROPFILE)
             {
                 tryLoadRom(event.drop.file);
                 SDL_free(event.drop.file);
+            }
+
+            // LT/RT Palette Swaps
+            else if (event.type == SDL_CONTROLLERAXISMOTION)
+            {
+                if (!controller || event.caxis.which != controllerId)
+                {
+                    continue;
+                }
+
+                const Sint16 TRIGGER_PRESS = 16000;
+                const Sint16 TRIGGER_RELEASE = 8000;
+
+                // LT - Last Palette
+                if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT)
+                {
+                    if (!leftTriggerHeld && event.caxis.value >= TRIGGER_PRESS)
+                    {
+                        leftTriggerHeld = true;
+                        cyclePalette(-1);
+                    }
+                    else if (event.caxis.value <= TRIGGER_RELEASE)
+                    {
+                        leftTriggerHeld = false;
+                    }
+                }
+
+                // RT - Next Palette 
+                else if (event.caxis.axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)
+                {
+                    if (!rightTriggerHeld && event.caxis.value >= TRIGGER_PRESS)
+                    {
+                        rightTriggerHeld = true;
+                        cyclePalette(1);
+                    }
+                    else if (event.caxis.value <= TRIGGER_RELEASE)
+                    {
+                        rightTriggerHeld = false;
+                    }
+                }
             }
             else if (event.type == SDL_KEYDOWN || event.type == SDL_CONTROLLERBUTTONDOWN)
             {
@@ -1898,8 +2807,39 @@ int main()
                         ? SDLK_RETURN : SDLK_RETURN;
                         break;
 
+                    case SDL_CONTROLLER_BUTTON_Y:
+                        key = SDLK_F2;
+                        break;
+
+                    // Fullscreen
                     case SDL_CONTROLLER_BUTTON_BACK:
                         key = SDLK_F11;
+                        break;
+
+                    // Disable Next Piece Previewer  
+                    case SDL_CONTROLLER_BUTTON_RIGHTSTICK:
+                        key = SDLK_BACKSPACE;
+                        break;
+
+                    // Toggle Music Ingame
+                    case SDL_CONTROLLER_BUTTON_LEFTSTICK:
+                        key = SDLK_F6;
+                        break;
+
+                    // LB for Extras Page one
+                    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER:
+                        if (screen == Screen::SETTINGS)
+                            key = SDLK_PAGEUP;
+                        else
+                        continue;
+                        break;
+
+                    // RB for Page two, ingame RB is used for piece holding    
+                    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
+                        if (screen == Screen::SETTINGS)
+                            key = SDLK_PAGEDOWN;
+                        else
+                            key = SDLK_c;
                         break;
 
                     default:
@@ -1907,15 +2847,27 @@ int main()
                     }
                 }
 
+                // F6 - disable music
                 if (key == SDLK_F6)
                 {
-                    if (musicPreviewPlaying && currentRomSong == 5)
+                    if (screen == Screen::IN_GAME && mode == MODE_PLAYING && !viewer && selectedMusic != 3)
                     {
-                        stopRomSong();
-                    }
-                    else
-                    {
-                        startRomSong(5);
+                        musicMuted = !musicMuted;
+
+                        if (musicMuted)
+                        {
+                            stopRomSong();
+                        }
+                        else
+                        {
+                            resumeChosenMusic();
+                        }
+
+                        if (audioDevice != 0)
+                        {
+                            SDL_ClearQueuedAudio(audioDevice);
+                        }
+                        SDL_Log("Gameplay music: %s", musicMuted ? "OFF" : "ON");
                     }
 
                     continue;
@@ -1923,14 +2875,182 @@ int main()
 
                 if (key == SDLK_F11)
                 {
+                    toggleFullscreen();
+                    continue;
+                }
 
-                    bool fullscreen =
-                    (SDL_GetWindowFlags(window) &
-                        SDL_WINDOW_FULLSCREEN) != 0;
-
-                    if (SDL_SetWindowFullscreen(window, fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP) != 0)
+                // NEW for v1.1
+                if (key == SDLK_F2 && !viewer && (screen == Screen::GAME_MUSIC || screen == Screen::SETTINGS))
+                {
+                    if (screen == Screen::SETTINGS)
                     {
-                        SDL_Log("Fullscreen error: %s", SDL_GetError());
+                        screen = settingsReturnScreen;
+                    }
+                    else if (screen == Screen::TITLE ||
+                        screen == Screen::GAME_MUSIC ||
+                        screen == Screen::A_LEVEL ||
+                        screen == Screen::B_LEVEL ||
+                        screen == Screen::B_HIGH)
+                    {
+                        settingsReturnScreen = screen;
+                        settingsSelection = 0;
+                        settingsPage = 0;
+                        screen = Screen::SETTINGS;
+                    }
+                    continue;
+                }
+                
+                if (screen == Screen::IN_GAME &&
+                    mode == MODE_PLAYING && !viewer &&
+                    !clearing && entryPhase == 0)
+                {
+                    // HARD DROP
+                    if (hardDropEnabled && key == SDLK_UP)
+                    {
+                        while (tryMove(piece, 0, 1))
+                        {
+                        }
+
+                        landIfResting();
+                        continue;
+                    }
+
+                    // HOLD PIECE
+                    if (holdEnabled && key == SDLK_c)
+                    {
+                        if (!holdUsedThisPiece)
+                        {
+                            holdUsedThisPiece = true;
+
+                            int currentType = piece.type;
+
+                            if (heldPieceType < 0)
+                            {
+                                heldPieceType = currentType;
+
+                                if (!spawn())
+                                    beginGameOver();
+                            }
+                            else
+                            {
+                                piece = { heldPieceType, 0, 3, -1 };
+                                heldPieceType = currentType;
+
+                                if (collides(piece))
+                                    beginGameOver();
+                            }
+
+                            lastDrop = SDL_GetTicks();
+                            lastSoftDrop = lastDrop;
+                            softRows = 0;
+                            heldDir = 0;
+                            repeatAt = 0;
+                            needFreshDown = true;
+                        }
+
+                        continue;
+                    }
+                }
+
+                // F3 allows instant Palette swaps, even ingame 
+                // F3 = Next Palette, F3 + Shift for the Previous
+                if (key == SDLK_F3)
+                {
+                    int direction = (SDL_GetModState() & KMOD_SHIFT) ? -1 : 1;
+
+                    cyclePalette(direction);
+                    continue;
+                }
+
+                if (screen == Screen::SETTINGS)
+                {
+                    // return to last menu
+                    if (key == SDLK_ESCAPE || key == SDLK_z || key == SDLK_BACKSPACE)
+                    {
+                        screen = settingsReturnScreen;
+                    }
+
+                    // swap between the extra pages
+                    else if (key == SDLK_TAB || key == SDLK_PAGEUP || key == SDLK_PAGEDOWN)
+                    {
+                        if (key == SDLK_PAGEUP)
+                            settingsPage = 0;
+                        else if (key == SDLK_PAGEDOWN)
+                            settingsPage = 1;
+                        else
+                            settingsPage = 1 - settingsPage;
+
+                        // start on the first option of each page
+                        settingsSelection = 0;
+                        playMenuSound(false);
+                    }
+
+                    // move selection cursor up
+                    else if (key == SDLK_UP)
+                    {
+                        if (settingsSelection > 0)
+                            --settingsSelection;
+                    }
+
+                    // move the selection cursor down
+                    else if (key == SDLK_DOWN)
+                    {
+                        int last = (settingsPage == 0) ? 4 : 2;
+
+                        if (settingsSelection < last)
+                            ++settingsSelection;
+                    }
+
+                    // change the highlighted setting
+                    else if (key == SDLK_LEFT ||
+                        key == SDLK_RIGHT ||
+                        key == SDLK_RETURN ||
+                        key == SDLK_SPACE ||
+                        key == SDLK_x)
+                    {
+                        int direction =
+                            (key == SDLK_LEFT) ? -1 : 1;
+
+                        if (settingsPage == 0)
+                        {
+                            // extras Page one
+                            if (settingsSelection == 0)
+                            {
+                                cyclePalette(direction);
+                            }
+                            else if (settingsSelection == 1)
+                            {
+                                toggleFullscreen();
+                            }
+                            else
+                            {
+                                if (settingsSelection == 2)
+                                    ghostEnabled = !ghostEnabled;
+                                else if (settingsSelection == 3)
+                                    hardDropEnabled = !hardDropEnabled;
+                                else if (settingsSelection == 4)
+                                    holdEnabled = !holdEnabled;
+
+                                savePreferences();
+                            }
+                        }
+                        else
+                        {
+                            // extras Page two
+                            int* target =
+                                (settingsSelection == 0) ? &masterVolume :
+                                (settingsSelection == 1) ? &musicVolume :
+                                &sfxVolume;
+
+                            *target = std::clamp(
+                                *target + direction * 10,
+                                0,
+                                100
+                            );
+
+                            savePreferences();
+                            playMenuSound(false);
+                        }
                     }
 
                     continue;
@@ -2102,43 +3222,56 @@ int main()
 
                         if (!musicMenuFocus)
                         {
+                            // A-TYPE   B-TYPE
+                            // C-TYPE   EXTRAS
+                            int previousType = selectedGameType;
 
-                            if (key == SDLK_LEFT && selectedGameType != 0)
-                            {
-                                selectedGameType = 0;
-                                selectionChanged = true;
-                            }
-                            else if (key == SDLK_RIGHT && selectedGameType != 1)
-                            {
-                                selectedGameType = 1;
-                                selectionChanged = true;
-                            }
+                            if (key == SDLK_LEFT && selectedGameType % 2 == 1)
+                                selectedGameType--;
+
+                            else if (key == SDLK_RIGHT && selectedGameType % 2 == 0)
+                                selectedGameType++;
+
+                            else if (key == SDLK_UP && selectedGameType >= 2)
+                                selectedGameType -= 2;
+
                             else if (key == SDLK_DOWN)
                             {
-                                musicMenuFocus = true;
-                                focusChanged = true;
+                                if (selectedGameType < 2)
+                                {
+                                    selectedGameType += 2;
+                                }
+                                else
+                                {
+                                    musicMenuFocus = true;
+                                    focusChanged = true;
+                                }
+                            }
+
+                            if (selectedGameType != previousType)
+                            {
+                                selectionChanged = true;
                             }
                         }
                         else
                         {
                             int previousMusic = selectedMusic;
 
-                            if (key == SDLK_LEFT && selectedMusic % 2 == 1)
-                                selectedMusic--;
+                            if (key == SDLK_LEFT && selectedMusic % 2 == 1) selectedMusic--;
 
-                            else if (key == SDLK_RIGHT && selectedMusic % 2 == 0)
-                                selectedMusic++;
+                            else if (key == SDLK_RIGHT && selectedMusic % 2 == 0) selectedMusic++;
 
-                            else if (key == SDLK_DOWN && selectedMusic < 2)
-                                selectedMusic += 2;
+                            else if (key == SDLK_DOWN && selectedMusic < 2) selectedMusic += 2;
 
                             else if (key == SDLK_UP)
                             {
-                                if (selectedMusic >= 2)
-                                    selectedMusic -= 2;
+                                if (selectedMusic >= 2) selectedMusic -= 2;
+                                
                                 else
                                 {
                                     musicMenuFocus = false;
+                                    // Return to C-TYPE or EXTRAS
+                                    selectedGameType = 2 + selectedMusic % 2;
                                     focusChanged = true;
                                 }
                             }
@@ -2157,21 +3290,46 @@ int main()
                                 }
                             }
                         }
+
+                        // fix: play the lil bleep anytime the selection changes
                         if (selectionChanged || focusChanged)
                         {
                             playMenuSound(false);
                         }
+
                         if (key == SDLK_RETURN)
                         {
-                            if (selectedGameType == 0)
+                            if (musicMenuFocus)
+                            {
+                                // Confirm music and return to type selection
+                                musicMenuFocus = false;
+
+                                selectedGameType = selectedMusic % 2;
+
+                                playMenuSound(true);
+                            }
+                            else if (selectedGameType == 0)
+                            {
+                                playMenuSound(true);
+                                screen = Screen::A_LEVEL;
+                            }
+                            else if (selectedGameType == 1)
+                            {
+                                SDL_Log("B-TYPE got stuck in traffic");
+                            }
+                            else if (selectedGameType == 2)
+                            {
+                                SDL_Log("C-TYPE has left the building");
+                            }
+                            else if (selectedGameType == 3)
                             {
                                 playMenuSound(true);
 
-                                screen = Screen::A_LEVEL;
-                            }
-                            else
-                            {
-                                SDL_Log("B-Type is not implemented yet.");
+                                settingsReturnScreen = Screen::GAME_MUSIC;
+                                settingsSelection = 0;
+                                settingsPage = 0;
+
+                                screen = Screen::SETTINGS;
                             }
                         }
                     }
@@ -2215,23 +3373,26 @@ int main()
                         {
                             std::string& name = highScores[playedLevel][pendingRank].name;
 
-                            if (key == SDLK_UP)
+                            if (key == SDLK_UP || key == SDLK_DOWN)
                             {
-                                if (name[namePosition] == 'Z')
-                                    name[namePosition] = 'A';
-                                else
-                                    name[namePosition]++;
-                            }
-                            else if (key == SDLK_DOWN)
-                            {
-                                if (name[namePosition] == 'A')
-                                    name[namePosition] = 'Z';
-                                else
-                                    name[namePosition]--;
+                                static const std::string SCORE_CHARACTERS =
+                                    "-ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+                                size_t found = SCORE_CHARACTERS.find(name[namePosition]);
+
+                                int index = (found == std::string::npos)
+                                    ? 0 : static_cast<int>(found);
+
+                                int step = (key == SDLK_UP) ? 1 : -1;
+                                int count = static_cast<int>(SCORE_CHARACTERS.size());
+
+                                index = (index + step + count) % count;
+
+                                name[namePosition] = SCORE_CHARACTERS[index];
                             }
                             else if (key == SDLK_x || key == SDLK_SPACE)
                             {
-                                if (namePosition < 5)
+                                if (namePosition < HIGH_SCORE_NAME_LENGTH - 1)
                                 {
                                     namePosition++;
                                 }
@@ -2275,6 +3436,57 @@ int main()
 
         discordpp::RunCallbacks();
 
+        // playtime tracking
+        const Uint32 frameNow = SDL_GetTicks(); const Uint32 frameElapsed = frameNow - previousFrameTick;
+
+        previousFrameTick = frameNow;
+
+        // for the rainbow palette
+        if (paletteIndex == PALETTE_COUNT - 1)
+        {
+            // time to complete a cycle
+            const Uint32 RAINBOW_CYCLE_MS = 25000;
+
+            // hue will move from 0 to 360  
+            float hue = (frameNow % RAINBOW_CYCLE_MS) * (360.0f / RAINBOW_CYCLE_MS);
+
+            // the saturation for each shade
+            const float saturation[4] =
+            {
+                0.25f, 0.50f, 0.80f, 0.92f
+            };
+
+            // the brightness of each shade
+            const float brightness[4] =
+            {
+                1.00f, 0.78f, 0.46f, 0.19f
+            };
+
+            // update the four shades
+            for (int i = 0; i < 4; ++i)
+            {
+                PALETTE[i] = hueToColor(hue, saturation[i], brightness[i]);
+            }
+        }
+
+        // only count during gameplay
+        if (romLoaded && screen == Screen::IN_GAME && mode == MODE_PLAYING && !viewer)
+        {
+            // stop counting if paused
+            const Uint32 activeElapsed = std::min<Uint32>(frameElapsed, 1000);
+
+            sessionPlayMs += activeElapsed;
+            gamePlayMs += activeElapsed;
+        }
+
+        // write the total every 15 seconds
+        if (frameNow - lastStatisticSave >= 15000)
+        {
+            savePreferences();
+            lastStatisticSave = frameNow;
+        }
+
+
         Uint32 discordNow = SDL_GetTicks();
 
         if (firstDiscordUpdate || discordNow - lastDiscordUpdateAt >= 3000)
@@ -2295,6 +3507,11 @@ int main()
             case Screen::TITLE:
                 details = "At the Title Screen";
                 state = "Main Menu";
+                break;
+
+            case Screen::SETTINGS:
+                details = "Tinkering...";
+                state = "Settings";
                 break;
 
             case Screen::GAME_MUSIC:
@@ -2373,6 +3590,7 @@ int main()
                 entryPhase = 2;
 
                 spawn();
+                holdUsedThisPiece = false;
             }
 
             if (entryPhase == 2 && elapsed >= 33)
@@ -3279,6 +4497,28 @@ int main()
         {
             while (SDL_GetQueuedAudioSize(audioDevice) < AUDIO_TARGET_BYTES)
             {
+                // determine which of the four channels are being used to create the sound effects
+                const Uint32 audioNow = SDL_GetTicks();
+
+                const bool pulse1Effect = audioNow < rotationSfxUntil ||
+                    (screen == Screen::COPYRIGHT && startupChimeStep < 3) ||
+                    (screen == Screen::IN_GAME && lineSfxType != 0);
+
+                // fix: muted music playing when clearing lines
+                const bool pulse2Effect = tetrisWaveActive ||
+                    (screen == Screen::IN_GAME && mode == MODE_PAUSED);
+
+                const bool waveEffect = tetrisWaveActive ||
+                    (screen == Screen::IN_GAME && mode == MODE_GAME_OVER_FILL);
+
+                const bool noiseEffect = tetrisWaveActive || audioNow < noiseSfxUntil ||
+                    (screen == Screen::IN_GAME && mode == MODE_GAME_OVER_FILL);
+
+                // this converts 0 to 100 percents to 0.0 - 1.0
+                const float musicGain = musicVolume / 100.0f;
+                const float effectGain = sfxVolume / 100.0f;
+                const float masterGain = masterVolume / 100.0f;
+
                 for (int i = 0; i < AUDIO_CHUNK_SAMPLES; i++)
                 {
                     float channel1 = pulse1.nextSample(AUDIO_SAMPLE_RATE);
@@ -3289,7 +4529,11 @@ int main()
 
                     float channel4 = noise.nextSample(AUDIO_SAMPLE_RATE);
 
-                    audioBuffer[i] = channel1 + channel2 + channel3 + channel4;
+                    // apply music and SFX levels to each channel then apply master volume to the result
+                    audioBuffer[i] = masterGain * (channel1 * (pulse1Effect ? effectGain : musicGain) +
+                        channel2 * (pulse2Effect ? effectGain : musicGain) +
+                        channel3 * (waveEffect ? effectGain : musicGain) +
+                        channel4 * (noiseEffect ? effectGain : musicGain));
                 }
                 if (SDL_QueueAudio(audioDevice, audioBuffer.data(), static_cast<Uint32>(audioBuffer.size() * sizeof(float))) != 0)
                 {
@@ -3311,7 +4555,7 @@ int main()
             break;
         }
 
-        SDL_SetRenderDrawColor(renderer, 155, 188, 15, 255);
+        SDL_SetRenderDrawColor(renderer, PALETTE[0].r, PALETTE[0].g, PALETTE[0].b, 255);
         SDL_RenderClear(renderer);
 
         if (romLoaded && screen == Screen::COPYRIGHT)
@@ -3331,26 +4575,179 @@ int main()
                 drawSpriteTile(renderer, titleTiles, 0x58, 88, 112);
             }
         }
-
         else if (romLoaded && screen == Screen::GAME_MUSIC)
         {
-            drawLayout(renderer, tiles, gameMusicLayout);
-            bool flashOn = (SDL_GetTicks() / 268) % 2 == 0;
+            // Draw expanded menu using assets from the rom, SDL could do it but it wont look great 
+            drawLayout(renderer, tiles, expandedGameMusicLayout);
 
-            int gameX = (selectedGameType == 0) ? 24 : 88;
-            int gameY = 40;
+            const bool flashOn = (SDL_GetTicks() / 268) % 2 == 0;
 
-            if (musicMenuFocus || flashOn)
+            const char* extrasLabel = "EXTRAS";
+
+            const int dimText[4] = { 0, 1, 1, 1 };
+            const int brightText[4] = { 0, 3, 3, 3 };
+
+            bool extrasHighlighted = !musicMenuFocus && selectedGameType == 3 && flashOn;
+
+            for (int i = 0; i < 6; ++i)
             {
-                drawOriginalMenuSelection(renderer, musicRom, tiles, selectedGameType, gameX, gameY);
+                int tile = 0x0A + (extrasLabel[i] - 'A');
+
+                drawTile(renderer, tiles.data() + tile * 16, 88 + i * 8, 56, extrasHighlighted ? brightText : dimText);
             }
 
+            // OG selection graphics for A, B and C
+            if (!musicMenuFocus && flashOn && selectedGameType < 3)
+            {
+                int selectedX = (selectedGameType % 2 == 0) ? 24 : 88;
+
+                int selectedY = (selectedGameType < 2) ? 40 : 56;
+
+                drawOriginalMenuSelection(renderer, musicRom, tiles, selectedGameType, selectedX, selectedY);
+            }
+
+            // Music Type has moved down by one tile
             int musicX = (selectedMusic % 2 == 0) ? 24 : 88;
-            int musicY = (selectedMusic < 2) ? 96 : 112;
+
+            int musicY = (selectedMusic < 2) ? 104 : 120;
 
             if (!musicMenuFocus || flashOn)
             {
                 drawOriginalMenuSelection(renderer, musicRom, tiles, selectedMusic, musicX, musicY);
+            }
+        }
+        else if (romLoaded && screen == Screen::SETTINGS)
+        {
+            if (settingsPage == 0)
+            {
+            // Background and panels from the OG ROM
+            drawLayout(renderer, tiles, extrasLayout);
+
+            drawGBText(renderer, tiles, "EXTRAS", 7, 2);
+            drawGBText(renderer, tiles, "P1", 16, 2);
+
+            // Palette panel
+            drawGBText(renderer, tiles, "COLOR SELECTION", 3, 5);
+            drawGBText(renderer, tiles, PALETTE_NAMES[paletteIndex], 3, 6);
+
+            for (int i = 0; i < 4; ++i)
+            {
+                SDL_SetRenderDrawColor(renderer,
+                    PALETTE[i].r, PALETTE[i].g, PALETTE[i].b, 255);
+
+                SDL_Rect swatch = { 24 + i * 30, 57, 26, 6 };
+                SDL_RenderFillRect(renderer, &swatch);
+            }
+
+            // fullscreen should onto one row
+            drawGBText(renderer, tiles, "FULLSCREEN", 3, 10);
+
+            bool fullscreen = (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) != 0;
+
+            drawGBText(renderer, tiles, fullscreen ? "ON" : "OFF", 15, 10);
+
+            // the three gameplay options
+            drawGBText(renderer, tiles, "GHOST PIECE", 3, 13);
+            drawGBText(renderer, tiles, ghostEnabled ? "ON" : "OFF", 15, 13);
+
+            drawGBText(renderer, tiles, "HARD DROP", 3, 14);
+            drawGBText(renderer, tiles, hardDropEnabled ? "ON" : "OFF", 15, 14);
+
+            drawGBText(renderer, tiles, "HOLD PIECE", 3, 15);
+            drawGBText(renderer, tiles, holdEnabled ? "ON" : "OFF", 15, 15);
+
+            // le cursor should follow all 5 settings
+            const int cursorRows[5] = { 5, 10, 13, 14, 15 };
+            int cursorRow = cursorRows[settingsSelection];
+
+
+            SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+            SDL_Rect cursor = { 17, cursorRow * 8 + 2, 4, 5 };
+            SDL_RenderFillRect(renderer, &cursor);
+
+            }
+            else // extras Page 2
+            {
+                // OG rom background and borders
+                drawLayout(renderer, tiles, extrasAudioLayout);
+
+                drawGBText(renderer, tiles, "EXTRAS", 7, 2);
+                drawGBText(renderer, tiles, "P2", 16, 2);
+
+                // the big three 
+                const char* names[3] =
+                {
+                    "MASTER VOL",
+                    "MUSIC VOL",
+                    "SFX VOL"
+                };
+
+                const int volumes[3] =
+                {
+                    masterVolume,
+                    musicVolume,
+                    sfxVolume
+                };
+
+                const int rowStarts[3] = { 5, 9, 13 };
+
+                for (int opt = 0; opt < 3; ++opt)
+                {
+                    int row = rowStarts[opt];
+
+                    // name and Percent
+                    drawGBText(renderer, tiles,
+                        names[opt], 3, row);
+
+                    drawNumber(renderer, tiles,
+                        volumes[opt], 3, 144, row * 8);
+
+                    // use blocks to form the volume bar (should be exactly 10)
+                    for (int j = 0; j < 10; ++j)
+                    {
+                        const SDL_Color shade =
+                            (j < (volumes[opt] + 9) / 10)
+                            ? PALETTE[3]
+                            : PALETTE[1];
+
+                        SDL_SetRenderDrawColor(renderer,
+                            shade.r, shade.g, shade.b, 255);
+
+                        SDL_Rect tick =
+                        {
+                            24 + j * 11,
+                            (row + 1) * 8 + 2,
+                            9,
+                            4
+                        };
+
+                        SDL_RenderFillRect(renderer, &tick);
+                    }
+                }
+
+                // TOTAL PLAYTIME (first on to 1000 hours gets a pack of Chocolate Digestives)
+                uint64_t totalSeconds = savedPlaySeconds + sessionPlayMs / 1000;
+
+                std::string totalText =
+                    "TOTAL " + std::to_string(totalSeconds / 3600) + 
+                    "H " + std::to_string((totalSeconds / 60) % 60) + "M";
+
+                if (totalText.size() > 16) totalText.resize(16);
+
+                drawGBText(renderer, tiles, totalText, 2, 16);
+
+                // selection cursor 
+                int cursorRow = rowStarts[settingsSelection];
+
+                SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+                SDL_Rect cursor =
+                {
+                    17, cursorRow * 8 + 2, 4, 5
+                };
+
+                SDL_RenderFillRect(renderer, &cursor);
             }
         }
         else if (romLoaded && (screen == Screen::A_LEVEL || screen == Screen::SCOREBOARD))
@@ -3365,7 +4762,7 @@ int main()
 
                 if (entry.score <= 0) continue;
 
-                drawGBText(renderer, tiles, entry.name, 4, 13 + i);
+                drawScoreName(renderer, tiles, entry.name, 4, 13 + i);
 
                 drawNumber(renderer, tiles, entry.score, 0, 144, (13 + i) * 8);
             }
@@ -3375,7 +4772,7 @@ int main()
 
             bool cursorVisible = (SDL_GetTicks() / 268) % 2 == 0;
 
-            if (cursorVisible)
+            if (screen == Screen::A_LEVEL && cursorVisible)
             {
                 drawSpriteTile(renderer, tiles, aLevel, x, y);
             }
@@ -3444,8 +4841,17 @@ int main()
                 }
                 else
                 {
+                    if (holdEnabled && heldFrame)
+                    {
+                        drawPreviewLabel(renderer, tiles, "NEXT", 120, 104);
+                    }
+
+                    // always use the original tetromino preview
+                    // tetromino is a fun name :D its got a nice pronounciatiom
                     if (!nextHidden)
+                    {
                         drawPiece(renderer, tiles, Piece{ nextType, 0, 13, 13 });
+                    }
 
                     if (clearing)
                     {
@@ -3503,8 +4909,34 @@ int main()
                     }
                     else if (entryPhase == 0)
                     {
+                        if (ghostEnabled && mode == MODE_PLAYING)
+                        {
+                            // make a copy of the current piece
+                            Piece ghost = piece;
+
+                            // move the copy downward
+                            while (!collides(ghost))
+                            {
+                                Piece below = ghost;
+                                below.y++;
+
+                                if (collides(below))
+                                    break;
+
+                                ghost = below;
+                            }
+
+                            // draw the ghost only if it's below the real piece
+                            if (ghost.y != piece.y && !collides(ghost))
+                            {
+                                drawGhostPiece(renderer, ghost);
+                            }
+                        }
+
+                        // draw the actual falling piece on top
                         drawPiece(renderer, tiles, piece);
                     }
+
                 }
             }
         }
@@ -3514,20 +4946,65 @@ int main()
         // Scale the game frame, extend the game panel and present the output.
         // ============================================================================
 
+        // draw the timer in its own render target
+        const bool showGameTimer = romLoaded && screen == Screen::IN_GAME && gameTimerFrame;
+
+        if (showGameTimer)
+        {
+            if (SDL_SetRenderTarget(renderer, gameTimerFrame) == 0)
+            {
+                drawGameTimer(renderer, tiles, layout, gamePlayMs);
+            }
+        }
+
+        const bool showHeldPanel = romLoaded && screen == Screen::IN_GAME && holdEnabled && heldFrame;
+
+        if (showHeldPanel)
+        {
+            if (SDL_SetRenderTarget(renderer, heldFrame) == 0)
+            {
+                SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
+
+                SDL_RenderClear(renderer);
+
+                // Hide HELD during pause and Game Over.
+                const bool hideHeldContents = mode == MODE_PAUSED || mode == MODE_GAME_OVER_FILL || mode == MODE_GAME_OVER_TEXT;
+
+                drawHeldPreview(renderer, tiles, layout, hideHeldContents ? -1 : heldPieceType, !hideHeldContents);
+            }
+        }
+
         SDL_SetRenderTarget(renderer, nullptr);
 
+        // the Copyright screen should always use the players selected palette
         if (screen == Screen::COPYRIGHT)
         {
-            SDL_SetRenderDrawColor(renderer, 155, 188, 15, 255);
+            SDL_SetRenderDrawColor(renderer, PALETTE[0].r, PALETTE[0].g, PALETTE[0].b, 255);
         }
         else
         {
-            SDL_SetRenderDrawColor(renderer, 15, 56, 15, 255);
+            SDL_SetRenderDrawColor(renderer, PALETTE[3].r, PALETTE[3].g, PALETTE[3].b, 255);
         }
-
         SDL_RenderClear(renderer);
 
         SDL_Rect gameDst = getGameDstRect(renderer);
+
+        // make room for the OG screen and the new held panel
+        if (romLoaded && screen == Screen::IN_GAME && (showGameTimer || showHeldPanel))
+        {
+            int windowW, windowH;
+            SDL_GetRendererOutputSize(renderer, &windowW, &windowH);
+
+            float scaleX = windowW / 220.0f;
+            float scaleY = windowH / 144.0f;
+            float scale = (scaleX < scaleY) ? scaleX : scaleY;
+
+            int totalW = static_cast<int>(std::floor(220.0f * scale));
+            int frameW = static_cast<int>(std::floor(160.0f * scale));
+            int frameH = static_cast<int>(std::floor(144.0f * scale));
+
+            gameDst = {(windowW - totalW) / 2, (windowH - frameH) / 2, frameW, frameH};
+        }
 
         SDL_Rect fullSrc = { 0, 0, 160, 144 };
 
@@ -3543,18 +5020,56 @@ int main()
 
             if (extensionW > 0)
             {
-
                 SDL_Rect sliceSrc = { 159, 0, 1, 144 };
 
-                SDL_Rect sliceDst = {
-                    extensionX,
-                    gameDst.y,
-                    extensionW,
-                    gameDst.h
-                };
+                SDL_Rect sliceDst = {extensionX, gameDst.y, extensionW, gameDst.h};
+
+                if (showGameTimer || showHeldPanel)
+                {
+                    sliceSrc.h = 96;
+
+                    sliceDst.h = static_cast<int>(gameDst.h * (96.0f / 144.0f));
+                }
 
                 SDL_RenderCopy(renderer, gameFrame, &sliceSrc, &sliceDst);
             }
+        }
+
+        // display time next to level
+        if (showGameTimer)
+        {
+            float scale = gameDst.w / 160.0f;
+
+            SDL_Rect timerDst =
+            {
+                // make the new box appear four GB pixels to the right 
+                gameDst.x + static_cast<int>(164.0f * scale),
+
+                // align next to the OG level box 
+                gameDst.y + static_cast<int>(40.0f * scale),
+
+                // use the same dimentions from the OG level box
+                static_cast<int>(56.0f * scale),
+                static_cast<int>(28.0f * scale)
+            };
+
+            SDL_RenderCopy(renderer, gameTimerFrame, nullptr, &timerDst);
+        }
+
+        // held must be directly to the right of the next panel
+        if (showHeldPanel)
+        {
+            float scale = gameDst.w / 160.0f;
+
+            SDL_Rect heldDst =
+            {
+                gameDst.x + static_cast<int>(164.0f * scale),
+                gameDst.y + static_cast<int>(96.0f * scale),
+                static_cast<int>(56.0f * scale),
+                static_cast<int>(48.0f * scale)
+            };
+
+            SDL_RenderCopy(renderer, heldFrame, nullptr, &heldDst);
         }
 
         SDL_RenderPresent(renderer);
@@ -3565,7 +5080,10 @@ int main()
     // Release Discord, SDL graphics, audio, input and the window.
     // ============================================================================
 
+    savePreferences();
     discordClient.reset();
+    SDL_DestroyTexture(gameTimerFrame);
+    SDL_DestroyTexture(heldFrame);
     SDL_DestroyTexture(gameFrame);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
